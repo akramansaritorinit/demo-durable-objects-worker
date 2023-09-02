@@ -1,151 +1,156 @@
 interface Env {
-    store: DurableObjectNamespace;
+	store: DurableObjectNamespace;
 }
 
 type StoreType = {
-    count: number;
-    name?: string;
+	count: number;
+	name?: string;
 };
 
 export class Store {
-    state: DurableObjectState;
-    private conns = new Set<WebSocket>();
+	state: DurableObjectState;
+	private conns = new Set<WebSocket>();
+	private store: StoreType = { count: 0 };
 
-    constructor(state: DurableObjectState) {
-        this.state = state;
-    }
+	constructor(state: DurableObjectState) {
+		this.state = state;
+		this.initStore();
+	}
 
-    private broadcast(message: string) {
-        for (const conn of this.conns) {
-            // Check if the connection is still alive
-            try {
-                conn.send(message);
-            } catch (e) {
-                // If the connection is closed, remove it from the Set
-                this.conns.delete(conn);
-            }
-        }
-    }
+	private async initStore() {
+		const store: StoreType | undefined = await this.state.storage.get('store');
+		this.store = store || { count: 0 };
+	}
 
-    private async getStore(): Promise<StoreType> {
-        const store: StoreType | undefined = await this.state.storage.get('store');
-        return store || { count: 0 };
-    }
+	private async broadcast(message: string) {
+		for (const conn of this.conns) {
+			// Check if the connection is still alive
+			try {
+				conn.send(message);
+			} catch (e) {
+				// If the connection is closed, remove it from the Set
+				this.conns.delete(conn);
+			}
+		}
+	}
 
-    private async updateStore(newStore: StoreType) {
-        await this.state.storage.put('store', newStore);
-    }
+	private async updateStore(newStore: StoreType) {
+		await this.state.storage.put('store', newStore);
+	}
 
-    async increment() {
-        const store = await this.getStore();
-        const newStore = { ...store, count: store.count + 1 };
-        await this.updateStore(newStore);
+	async increment() {
+		const store = this.store;
+		const newStore = { ...store, count: store.count + 1 };
+		await this.updateStore(newStore);
 
-        // Broadcast the new count to all connected clients
-        this.broadcast(JSON.stringify({ type: 'update/store', store: newStore }));
+		// Broadcast the new count to all connected clients
+		this.broadcast(JSON.stringify({ type: 'update/store', store: newStore }));
 
-        return newStore;
-    }
+		this.store = newStore;
 
-    async decrement() {
-        const store = await this.getStore();
-        const newStore = { ...store, count: store.count - 1 };
-        await this.updateStore(newStore);
+		return newStore;
+	}
 
-        // Broadcast the new count to all connected clients
-        this.broadcast(JSON.stringify({ type: 'update/store', store: newStore }));
+	async decrement() {
+		const store = this.store;
+		const newStore = { ...store, count: store.count - 1 };
+		await this.updateStore(newStore);
 
-        return newStore;
-    }
+		// Broadcast the new count to all connected clients
+		this.broadcast(JSON.stringify({ type: 'update/store', store: newStore }));
 
-    async setName(name: string) {
-        const store = await this.getStore();
-        const newStore = { ...store, name };
-        await this.updateStore(newStore);
+		this.store = newStore;
 
-        // Broadcast the new name to all connected clients
-        this.broadcast(JSON.stringify({ type: 'update/store', store: newStore }));
+		return newStore;
+	}
 
-        return newStore;
-    }
+	async setName(name: string) {
+		const store = this.store;
+		const newStore = { ...store, name };
+		await this.updateStore(newStore);
 
-    // Handle HTTP requests from clients.
-    async fetch(request: Request) {
-        // Apply requested action.
-        const url = new URL(request.url);
-        let store = await this.getStore();
-        switch (url.pathname) {
-            case '/':
-                // Just serve the current value. No storage calls needed!
-                break;
-            case '/websocket':
-                const [client, server] = Object.values(new WebSocketPair());
+		// Broadcast the new name to all connected clients
+		this.broadcast(JSON.stringify({ type: 'update/store', store: newStore }));
 
-                server.addEventListener('message', async (event) => {
-                    // Messages are received/sent as strings, so we need to parse it into JSON
-                    // to use it as an object
-                    const action = JSON.parse(event.data as string);
+		this.store = newStore;
 
-                    switch (action.type) {
-                        case 'increment':
-                            store = await this.increment();
-                            break;
-                        case 'decrement':
-                            store = await this.decrement();
-                            break;
-                        case 'setName':
-                            store = await this.setName(action.name);
-                            break;
-                    }
+		return newStore;
+	}
 
-                    // Send the updated store to the client
-                    server.send(JSON.stringify({ type: 'update/store', store }));
-                });
+	// Handle HTTP requests from clients.
+	async fetch(request: Request) {
+		// Apply requested action.
+		const url = new URL(request.url);
+		let store = this.store;
+		switch (url.pathname) {
+			case '/':
+				return new Response(JSON.stringify(store), {
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				});
+			case '/websocket':
+				const [client, server] = Object.values(new WebSocketPair());
 
-                server.addEventListener('close', async () => {
-                    // Remove the session from the Set
-                    this.conns.delete(server);
+				server.addEventListener('message', async (event) => {
+					// Messages are received/sent as strings, so we need to parse it into JSON
+					// to use it as an object
+					const action = JSON.parse(event.data as string);
 
-                    if (this.conns.size === 0) {
-                        // When the client disconnects, we can delete all the data in Durable Object
-                        // Deleting all data automatically discards the Durable Object instance
-                        await this.state.storage.deleteAll();
-                    }
-                });
+					switch (action.type) {
+						case 'increment':
+							store = await this.increment();
+							break;
+						case 'decrement':
+							store = await this.decrement();
+							break;
+						case 'setName':
+							store = await this.setName(action.name);
+							break;
+					}
 
-                server.accept();
+					// Send the updated store to the client
+					server.send(JSON.stringify({ type: 'update/store', store }));
+				});
 
-                // Add the session to the Set
-                this.conns.add(server);
+				server.addEventListener('close', async () => {
+					// Remove the session from the Set
+					this.conns.delete(server);
 
-                return new Response(null, {
-                    status: 101,
-                    webSocket: client,
-                });
-            default:
-                return new Response('Not found', { status: 404 });
-        }
-        await this.state.storage.put('store', store);
+					if (this.conns.size === 0) {
+						// When the client disconnects, we can delete all the data in Durable Object
+						// Deleting all data automatically discards the Durable Object instance
+						await this.state.storage.deleteAll();
+					}
+				});
 
-        return new Response(JSON.stringify(store), {
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-    }
+				server.accept();
+
+				// Add the session to the Set
+				this.conns.add(server);
+
+				return new Response(null, {
+					status: 101,
+					webSocket: client,
+				});
+			default:
+				return new Response('Not found', { status: 404 });
+		}
+	}
 }
 
 async function handleRequest(request: Request, env: Env) {
-    const pathname = new URL(request.url).pathname;
-    if (pathname === '/') {
-        let id = env.store.idFromName('A');
-        let obj = env.store.get(id);
-        let resp = await obj.fetch(request);
-        let store: StoreType = await resp.json();
+	const pathname = new URL(request.url).pathname;
+	if (pathname === '/') {
+		try {
+			const id = env.store.idFromName('A');
+			const obj = env.store.get(id);
+			const resp = await obj.fetch(request);
+			let store: StoreType = await resp.json();
 
-        // Return HTML and connect to socket
-        return new Response(
-            `
+			// Return HTML and connect to socket
+			return new Response(
+				`
             <html>
                 <head>
                     <title>Counter</title>
@@ -207,32 +212,42 @@ async function handleRequest(request: Request, env: Env) {
                 </body>
             </html>
             `,
-            {
-                headers: {
-                    'Content-Type': 'text/html;charset=UTF-8',
-                },
-            }
-        );
-    }
+				{
+					headers: {
+						'Content-Type': 'text/html;charset=UTF-8',
+					},
+				}
+			);
+		} catch (e) {
+			console.log(e);
+		}
+	}
 
-    if (pathname === '/websocket') {
-        const upgradeHeader = request.headers.get('Upgrade');
+	if (pathname === '/websocket') {
+        // Check if the client wants to upgrade the connection to a WebSocket connection
+        try {
 
-        // If the upgrade header is not set, or it's not set to "websocket", return 426
-        if (!upgradeHeader || upgradeHeader !== 'websocket') {
-            return new Response('Expected Upgrade: websocket', { status: 426 });
+		const upgradeHeader = request.headers.get('Upgrade');
+
+		// If the upgrade header is not set, or it's not set to "websocket", return 426
+		if (!upgradeHeader || upgradeHeader !== 'websocket') {
+			return new Response('Expected Upgrade: websocket', { status: 426 });
+		}
+
+		// Since we want all clients to connect to the same Durable Object instance, we'll use a static string
+		// instead of the client IP
+		const counterId = env.store.idFromName('A');
+		const counter = env.store.get(counterId);
+		return await counter.fetch(request);
+        } catch (e) {
+            console.log(e);
+
         }
-
-        // Since we want all clients to connect to the same Durable Object instance, we'll use a static string
-        // instead of the client IP
-        const counterId = env.store.idFromName('A');
-        const counter = env.store.get(counterId);
-        return await counter.fetch(request);
-    }
+	}
 }
 
 export default {
-    async fetch(request: Request, env: Env) {
-        return await handleRequest(request, env);
-    },
+	async fetch(request: Request, env: Env) {
+		return await handleRequest(request, env);
+	},
 };
