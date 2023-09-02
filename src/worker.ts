@@ -161,5 +161,7 @@ async function handleRequest(request: Request, env: Env) {
 }
 
 export default {
-	fetch: handleRequest,
+	async fetch(request: Request, env: Env) {
+		return await handleRequest(request, env);
+	},
 };
