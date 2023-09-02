@@ -2,6 +2,11 @@ interface Env {
 	counter: DurableObjectNamespace;
 }
 
+type Store = {
+	count: number;
+	name?: string;
+};
+
 export class Counter {
 	state: DurableObjectState;
 	private conns = new Set<WebSocket>();
@@ -21,33 +26,42 @@ export class Counter {
 		}
 	}
 
+	private async getStore(): Promise<Store> {
+		const store: Store | undefined = await this.state.storage.get('store');
+		return store || { count: 0 };
+	}
+	
+	  private async updateStore(newStore: Store) {
+		await this.state.storage.put('store', newStore);
+	  }
+
 	async increment() {
-		const count: number = (await this.state.storage.get('count')) ?? 0;
-		const newCount = count + 1;
-		await this.state.storage.put('count', newCount);
+		const store = await this.getStore();
+		const newStore = { ...store, count: store.count + 1 };
+		await this.updateStore(newStore);
 
 		// Broadcast the new count to all connected clients
-		this.broadcast(JSON.stringify({ type: 'update/count', count: newCount }));
+		this.broadcast(JSON.stringify({ type: 'update/count', store: newStore }));
 
-		return newCount;
+		return newStore;
 	}
 
 	async decrement() {
-		const count: number = (await this.state.storage.get('count')) ?? 0;
-		const newCount = count - 1;
-		await this.state.storage.put('count', newCount);
+		const store = await this.getStore();
+		const newStore = { ...store, count: store.count - 1 };
+		await this.updateStore(newStore);
 
 		// Broadcast the new count to all connected clients
-		this.broadcast(JSON.stringify({ type: 'update/count', count: newCount }));
+		this.broadcast(JSON.stringify({ type: 'update/count', store: newStore }));
 
-		return newCount;
+		return newStore;
 	}
 
 	// Handle HTTP requests from clients.
 	async fetch(request: Request) {
 		// Apply requested action.
 		let url = new URL(request.url);
-		let count: number = (await this.state.storage?.get('count')) || 0;
+		let store = await this.getStore();
 		switch (url.pathname) {
 			case '/':
 				// Just serve the current value. No storage calls needed!
@@ -60,14 +74,17 @@ export class Counter {
 					// to use it as an object
 					const action = JSON.parse(event.data as string);
 
-					if (action.type === 'increment') {
-						const newCount = await this.increment();
-						server.send(JSON.stringify({ type: 'update/count', count: newCount }));
-					} else if (action.type === 'decrement') {
-						const newCount = await this.decrement();
-
-						server.send(JSON.stringify({ type: 'update/count', count: newCount }));
+					switch (action.type) {
+						case 'increment':
+							store = await this.increment();
+							break;
+						case 'decrement':
+							store = await this.decrement();
+							break;
 					}
+
+					// Send the updated store to the client
+					server.send(JSON.stringify({ type: 'update/count', store }));
 				});
 
 				server.addEventListener('close', async () => {
@@ -93,9 +110,9 @@ export class Counter {
 			default:
 				return new Response('Not found', { status: 404 });
 		}
-		await this.state.storage?.put('count', count);
+		await this.state.storage.put('store', store);
 
-		return new Response(count.toString());
+		return new Response(JSON.stringify(store));
 	}
 }
 
@@ -105,7 +122,8 @@ async function handleRequest(request: Request, env: Env) {
 		let id = env.counter.idFromName('A');
 		let obj = env.counter.get(id);
 		let resp = await obj.fetch(request.url);
-		let count = await resp.text();
+		let store: Store = await resp.json();
+		console.log(store);
 		//return html and connect to socket
 		return new Response(
 			`
@@ -115,15 +133,15 @@ async function handleRequest(request: Request, env: Env) {
 				</head>
 				<body>
 					<h1>Counter</h1>
-					<p>Count: <span id="count">${count}</span></p>
+					<p>Count: <span id="count">${store.count}</span></p>
 					<button id="increment">Increment</button>
 					<button id="decrement">Decrement</button>
 					<script>
 						const socket = new WebSocket('ws://127.0.0.1:8787/websocket');
-						socket.addEventListener('message', event => {
-							const data = JSON.parse(event.data);
-							if (data.type === 'update/count') {
-								document.getElementById('count').innerText = data.count;
+						socket.addEventListener('message', (event) => {
+							const action = JSON.parse(event.data);
+							if (action.type === 'update/count') {
+								document.getElementById('count').innerText = action.store.count;
 							}
 						});
 						document.getElementById('increment').addEventListener('click', () => {
