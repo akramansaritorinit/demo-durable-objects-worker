@@ -3,7 +3,7 @@ main = "src/worker.ts"
 compatibility_date = "2023-09-01"
 
 [durable_objects]
-bindings = [{ name = "counter", class_name = "Counter" }]
+bindings = [{ name = "store", class_name = "Store" }]
 
 [[migrations]]
 tag = "v1" # Should be unique for each entry

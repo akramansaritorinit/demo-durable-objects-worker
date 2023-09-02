@@ -1,13 +1,13 @@
 interface Env {
-    counter: DurableObjectNamespace;
+    store: DurableObjectNamespace;
 }
 
-type Store = {
+type StoreType = {
     count: number;
     name?: string;
 };
 
-export class Counter {
+export class Store {
     state: DurableObjectState;
     private conns = new Set<WebSocket>();
 
@@ -27,12 +27,12 @@ export class Counter {
         }
     }
 
-    private async getStore(): Promise<Store> {
-        const store: Store | undefined = await this.state.storage.get('store');
+    private async getStore(): Promise<StoreType> {
+        const store: StoreType | undefined = await this.state.storage.get('store');
         return store || { count: 0 };
     }
 
-    private async updateStore(newStore: Store) {
+    private async updateStore(newStore: StoreType) {
         await this.state.storage.put('store', newStore);
     }
 
@@ -138,10 +138,10 @@ export class Counter {
 async function handleRequest(request: Request, env: Env) {
     const pathname = new URL(request.url).pathname;
     if (pathname === '/') {
-        let id = env.counter.idFromName('A');
-        let obj = env.counter.get(id);
+        let id = env.store.idFromName('A');
+        let obj = env.store.get(id);
         let resp = await obj.fetch(request);
-        let store: Store = await resp.json();
+        let store: StoreType = await resp.json();
 
         // Return HTML and connect to socket
         return new Response(
@@ -225,8 +225,8 @@ async function handleRequest(request: Request, env: Env) {
 
         // Since we want all clients to connect to the same Durable Object instance, we'll use a static string
         // instead of the client IP
-        const counterId = env.counter.idFromName('A');
-        const counter = env.counter.get(counterId);
+        const counterId = env.store.idFromName('A');
+        const counter = env.store.get(counterId);
         return await counter.fetch(request);
     }
 }
