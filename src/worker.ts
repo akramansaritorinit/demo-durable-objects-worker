@@ -116,8 +116,10 @@ export class Store {
                     <body>
                         <h1>Counter</h1>
                         <p>Name: <span id="name">${store.name || 'Not set'}</span></p>
-                        <input id="name-input" type="text" placeholder="Enter your name" />
-                        <button id="set-name">Set name</button>
+                        <form>
+                            <input id="name-input" type="text" placeholder="Enter your name" />
+                            <button id="set-name">Set name</button>
+                        </form>
                         <hr />
                         <p>Count: <span id="count">${store.count}</span></p>
                         <button id="increment">Increment</button>
