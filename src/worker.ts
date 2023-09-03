@@ -213,11 +213,11 @@ export class Store {
 export default {
 	async fetch(request: Request, env: Env) {
 		try {
-		const id = env.store.idFromName('A');
-		const obj = env.store.get(id);
-		return await obj.fetch(request);
-	} catch (e) {
-		console.error(e);
-	}
+			const id = env.store.idFromName('A');
+			const obj = env.store.get(id);
+			return await obj.fetch(request);
+		} catch (e) {
+			console.error(e);
+		}
 	},
 };
