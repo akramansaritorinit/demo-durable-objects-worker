@@ -87,7 +87,7 @@ export class Store {
 				`
                 <html>
                     <head>
-                        <title>Counter</title>
+                        <title>Home</title>
                         <style>
                             body {
                                 font-family: sans-serif;
@@ -126,7 +126,7 @@ export class Store {
                         <button id="decrement">Decrement</button>
                         
                         <script>
-                            const socket = new WebSocket('ws://127.0.0.1:8787/websocket');
+                            const socket = new WebSocket('wss://' + location.host + '/websocket');
                             socket.addEventListener('message', (event) => {
                                 const action = JSON.parse(event.data);
                                 if (action.type === 'update/store') {
@@ -213,7 +213,9 @@ export class Store {
 export default {
 	async fetch(request: Request, env: Env) {
 		try {
-			const id = env.store.idFromName('A');
+			const ip = request.headers.get('cf-connecting-ip');
+			console.log(ip);
+			const id = env.store.idFromName(ip!);
 			const obj = env.store.get(id);
 			return await obj.fetch(request);
 		} catch (e) {
