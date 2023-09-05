@@ -185,9 +185,9 @@ export class Store {
 			if (!upgradeHeader || upgradeHeader !== 'websocket') {
 				return new Response('Expected Upgrade: websocket', { status: 426 });
 			}
-			const [client, server] = Object.values(new WebSocketPair());
+			const pair = new WebSocketPair();
 
-			server.addEventListener('message', (event) => {
+			pair[1].addEventListener('message', (event) => {
 				const action = JSON.parse(event.data as string);
 
 				(async () => {
@@ -204,15 +204,15 @@ export class Store {
 					}
 
 					// Send the updated store to the client
-					server.send(JSON.stringify({ type: 'update/store', store }));
+					pair[1].send(JSON.stringify({ type: 'update/store', store }));
 				})().catch((error) => {
 					console.error('Error in event handler:', error);
 				});
 			});
 
-			server.addEventListener('close', async () => {
+			pair[1].addEventListener('close', async () => {
 				// Remove the session from the Set
-				this.conns.delete(server);
+				this.conns.delete(pair[1]);
 
 				if (this.conns.size === 0) {
 					// When the client disconnects, we can delete all the data in Durable Object
@@ -221,14 +221,14 @@ export class Store {
 				}
 			});
 
-			server.accept();
+			pair[1].accept();
 
 			// Add the session to the Set
-			this.conns.add(server);
+			this.conns.add(pair[1]);
 
 			return new Response(null, {
 				status: 101,
-				webSocket: client,
+				webSocket: pair[0],
 			});
 		}
 		return new Response('Not found', { status: 404 });
