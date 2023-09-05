@@ -116,7 +116,7 @@ export class Store {
                             }
                             input {
                                 margin-right: 10px;
-                                padding: 5px 10px;
+                                padding: 10px 20px;
                                 border-radius: 5px;
                                 border: 1px solid #ccc;
                             }
@@ -125,7 +125,7 @@ export class Store {
                                 margin-right: 10px;
                                 background: #eee;
                                 border: 1px solid #ccc;
-                                padding: 5px 10px;
+                                padding: 10px 20px;
                                 border-radius: 5px;
                             }
     
