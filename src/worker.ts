@@ -9,7 +9,7 @@ export default {
 			const url = new URL(request.url);
 			const searchId = url.searchParams.get('id');
 			if (!searchId) {
-				return new Response('Not found', { status: 404 });
+				return new Response('Select a Durable Object to contact by using' + ' the `id` URL query string parameter. e.g. ?id=1234', { status: 400 });
 			}
 			const id = env.store.idFromName(searchId);
 			const obj = env.store.get(id);
@@ -148,7 +148,7 @@ export class Store {
                         <button id="decrement">Decrement</button>
                         
                         <script>
-                            const socket = new WebSocket('ws://' + location.host + '/websocket' + location.search);
+                            const socket = new WebSocket('wss://' + location.host + '/websocket' + location.search);
                             socket.addEventListener('message', (event) => {
                                 const action = JSON.parse(event.data);
                                 if (action.type === 'update/store') {
@@ -188,7 +188,7 @@ export class Store {
 
 			server.addEventListener('message', (event) => {
 				const action = JSON.parse(event.data as string);
-			
+
 				(async () => {
 					switch (action.type) {
 						case 'increment':
@@ -201,14 +201,13 @@ export class Store {
 							store = await this.setName(action.name);
 							break;
 					}
-			
+
 					// Send the updated store to the client
 					server.send(JSON.stringify({ type: 'update/store', store }));
 				})().catch((error) => {
 					console.error('Error in event handler:', error);
 				});
 			});
-			
 
 			server.addEventListener('close', async () => {
 				// Remove the session from the Set
