@@ -149,7 +149,7 @@ export class Store {
                         
                         <script>
 							const wss = document.location.protocol === "http:" ? "ws://" : "wss://";
-                            const socket = new WebSocket(wss + '//' + location.host + '/websocket' + location.search);
+                            const socket = new WebSocket(wss + '//' + window.location.host + '/websocket' + window.location.search);
                             socket.addEventListener('message', (event) => {
                                 const action = JSON.parse(event.data);
                                 if (action.type === 'update/store') {
