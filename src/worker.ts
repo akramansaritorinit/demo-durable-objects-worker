@@ -52,7 +52,11 @@ export class Store {
 	}
 
 	private async updateStore(newStore: StoreType) {
-		await this.state.storage.put('store', newStore);
+		try {
+			await this.state.storage.put('store', newStore);
+		} catch (error) {
+			console.error('Error updating store:', error);
+		}
 	}
 
 	async increment() {
@@ -144,7 +148,7 @@ export class Store {
                         <button id="decrement">Decrement</button>
                         
                         <script>
-                            const socket = new WebSocket('wss://' + location.host + '/websocket' + location.search);
+                            const socket = new WebSocket('ws://' + location.host + '/websocket' + location.search);
                             socket.addEventListener('message', (event) => {
                                 const action = JSON.parse(event.data);
                                 if (action.type === 'update/store') {
@@ -182,26 +186,29 @@ export class Store {
 			}
 			const [client, server] = Object.values(new WebSocketPair());
 
-			server.addEventListener('message', async (event) => {
-				// Messages are received/sent as strings, so we need to parse it into JSON
-				// to use it as an object
+			server.addEventListener('message', (event) => {
 				const action = JSON.parse(event.data as string);
-
-				switch (action.type) {
-					case 'increment':
-						store = await this.increment();
-						break;
-					case 'decrement':
-						store = await this.decrement();
-						break;
-					case 'setName':
-						store = await this.setName(action.name);
-						break;
-				}
-
-				// Send the updated store to the client
-				server.send(JSON.stringify({ type: 'update/store', store }));
+			
+				(async () => {
+					switch (action.type) {
+						case 'increment':
+							store = await this.increment();
+							break;
+						case 'decrement':
+							store = await this.decrement();
+							break;
+						case 'setName':
+							store = await this.setName(action.name);
+							break;
+					}
+			
+					// Send the updated store to the client
+					server.send(JSON.stringify({ type: 'update/store', store }));
+				})().catch((error) => {
+					console.error('Error in event handler:', error);
+				});
 			});
+			
 
 			server.addEventListener('close', async () => {
 				// Remove the session from the Set
