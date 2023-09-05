@@ -117,6 +117,7 @@ export class Store {
                                 padding: 10px 20px;
                                 border-radius: 5px;
                                 border: 1px solid #ccc;
+								font-size: 16px;
                             }
     
                             button {
@@ -125,6 +126,7 @@ export class Store {
                                 border: 1px solid #ccc;
                                 padding: 10px 20px;
                                 border-radius: 5px;
+								font-size: 16px;
                             }
     
                             hr {
