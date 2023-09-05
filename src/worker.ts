@@ -31,14 +31,12 @@ export class Store {
 
 	constructor(state: DurableObjectState) {
 		this.state = state;
-		this.initStore();
+		this.state.blockConcurrencyWhile(async () => {
+			const store: StoreType | undefined = await this.state.storage.get('store');
+			this.store = store || { count: 0 };
+		});
 	}
-
-	private async initStore() {
-		const store: StoreType | undefined = await this.state.storage.get('store');
-		this.store = store || { count: 0 };
-	}
-
+	
 	private async broadcast(message: string) {
 		for (const conn of this.conns) {
 			// Check if the connection is still alive
