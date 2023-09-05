@@ -32,7 +32,7 @@ export class Store {
 	constructor(state: DurableObjectState) {
 		this.state = state;
 		this.state.blockConcurrencyWhile(async () => {
-			const store: StoreType | undefined = await this.state.storage.get('store');
+			const store = await this.state.storage.get<StoreType>('store');
 			this.store = store || { count: 0 };
 		});
 	}
