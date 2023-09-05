@@ -148,7 +148,8 @@ export class Store {
                         <button id="decrement">Decrement</button>
                         
                         <script>
-                            const socket = new WebSocket('wss://' + location.host + '/websocket' + location.search);
+							const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+                            const socket = new WebSocket(protocol + '//' + location.host + '/websocket' + location.search);
                             socket.addEventListener('message', (event) => {
                                 const action = JSON.parse(event.data);
                                 if (action.type === 'update/store') {
