@@ -187,6 +187,8 @@ export class Store {
 			}
 			const pair = new WebSocketPair();
 
+			pair[1].accept();
+
 			pair[1].addEventListener('message', (event) => {
 				const action = JSON.parse(event.data as string);
 
@@ -220,8 +222,6 @@ export class Store {
 					await this.state.storage.deleteAll();
 				}
 			});
-
-			pair[1].accept();
 
 			// Add the session to the Set
 			this.conns.add(pair[1]);
