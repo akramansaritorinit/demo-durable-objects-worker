@@ -1,5 +1,5 @@
-import HomePage from './page/home.html';
-import UserPage from './page/user.html';
+import HomePage from './pages/home.html';
+import UserPage from './pages/user.html';
 
 export default {
 	async fetch(request, env) {
