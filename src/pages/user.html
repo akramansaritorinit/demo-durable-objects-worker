@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home</title>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+
+        input {
+            margin-right: 10px;
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        button {
+            margin-right: 10px;
+            background: #eee;
+            border: 1px solid #ccc;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        hr {
+            margin: 20px 0;
+        }
+    </style>
+
+</head>
+
+<body>
+    <a href="/">Back</a>
+    <h1>Counter</h1>
+    <p>Name: <span id="name"></span></p>
+    <form id="name_form" >
+        <input id="name_input" type="text" placeholder="Enter your name" />
+        <button type="submit">Set name</button>
+    </form>
+    <hr />
+    <p>Count: <span id="count"></span></p>
+    <button id="increment">Increment</button>
+    <button id="decrement">Decrement</button>
+
+    <script>
+        let nameForm = document.querySelector('#name_form');
+        const wss = document.location.protocol === "http:" ? "ws://" : "wss://";
+        const socket = new WebSocket(wss + '//' + window.location.host + location.pathname + '/websocket');
+        socket.addEventListener('message', (event) => {
+            const action = JSON.parse(event.data);
+            if (action.type === 'update/store') {
+                document.getElementById('count').innerText = action.store.count;
+                document.getElementById('name').innerText = action.store.name;
+            }
+        });
+        document.getElementById('increment').addEventListener('click', () => {
+            socket.send(JSON.stringify({ type: 'increment' }));
+        });
+        document.getElementById('decrement').addEventListener('click', () => {
+            socket.send(JSON.stringify({ type: 'decrement' }));
+        });
+        nameForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const name = document.getElementById('name_input').value;
+            socket.send(JSON.stringify({ type: 'setName', name }));
+            document.getElementById('name_input').value = '';
+        });
+    </script>
+</body>
+</html>
