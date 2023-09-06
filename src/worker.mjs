@@ -43,7 +43,6 @@ export class Store {
 		};
 		const path = url.pathname.slice(1).split('/');
 		if (path[0] && path[1] === 'websocket') {
-			console.log('websocket');
 			if (request.headers.get('Upgrade') != 'websocket') {
 				return new Response('expected websocket', { status: 400 });
 			}
