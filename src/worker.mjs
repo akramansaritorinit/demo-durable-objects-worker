@@ -114,7 +114,7 @@ export class Store {
 							}
 							button:hover {
 								color: white;
-								transform: scale(1.1);
+								transform: scale(1.05);
 							}
 							body{
 								font-family: 'Courier New', Courier, monospace;
