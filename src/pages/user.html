@@ -40,6 +40,7 @@
             font-size: 16px;
             text-decoration: none;
         }
+
         .dark {
             background: #333;
             color: #eee;
@@ -48,7 +49,7 @@
 
 </head>
 
-<body class="" >
+<body class="">
     <a href="/">Go Back</a>
     <h1>Counter</h1>
     <p>Name: <span id="name"></span></p>
@@ -66,6 +67,7 @@
     <div>
         <button id="toggle-theme">Toggle Theme</button>
         <button id="change-style">Change Style</button>
+        <button id="load-images">Load Images</button>
     </div>
 
 
@@ -110,6 +112,9 @@
         });
         document.getElementById('change-style').addEventListener('click', () => {
             socket.send(JSON.stringify({ type: 'change-style' }));
+        });
+        document.getElementById('load-images').addEventListener('click', () => {
+            socket.send(JSON.stringify({ type: 'load-images' }));
         });
     </script>
 </body>

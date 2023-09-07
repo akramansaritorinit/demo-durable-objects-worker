@@ -47,7 +47,7 @@ export class Store {
 				return new Response('expected websocket', { status: 400 });
 			}
 			let pair = new WebSocketPair();
-			
+
 			pair[1].accept();
 
 			// Add the new socket to our list of sessions.
@@ -103,13 +103,13 @@ export class Store {
 								} else {
 									body.classList.add('dark');
 								}
-							`
+							`,
 						};
 						break;
 					case 'change-style':
 						data = {
 							type: 'load/style',
-							style:`
+							style: `
 								button {
 									background: linear-gradient(to right, pink, orange);
 									color: black;
@@ -124,7 +124,54 @@ export class Store {
 									font-family: 'Courier New', Courier, monospace;
 									font-weight: bold;
 								}
-							`
+							`,
+						};
+						break;
+					case 'load-images':
+						data = {
+							type: 'load/script',
+							script: `
+								let imageContainer = document.createElement('div');
+								imageContainer.style.display = 'flex';
+								imageContainer.style.flexWrap = 'wrap';
+								imageContainer.style.justifyContent = 'space-evenly';
+								imageContainer.style.alignItems = 'center';
+								imageContainer.style.gap = '20px';
+								imageContainer.style.margin = '64px 0';
+
+								let imgStyle = \`
+									max-width: 400px;
+									aspect-ratio: 4/3;
+									object-fit: cover;
+									flex: 1;
+									border-radius: 10px;
+								\`;
+
+								
+								let img1 = document.createElement('img');
+								img1.src = 'https://images.unsplash.com/photo-1693462135458-22f289177360?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2340&q=80';
+								img1.setAttribute('loading', 'lazy');
+								img1.style.cssText = imgStyle;
+
+								
+								let img2 = document.createElement('img');
+								img2.src = 'https://images.unsplash.com/photo-1693253024090-1fc1e1821a5c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2531&q=80';
+								img2.setAttribute('loading', 'lazy');
+								img2.style.cssText = imgStyle;
+
+								
+								let img3 = document.createElement('img');
+								img3.src = 'https://images.unsplash.com/photo-1693225822978-dace07f3b31b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2342&q=80';
+								img3.setAttribute('loading', 'lazy');
+								img3.style.cssText = imgStyle;
+
+								imageContainer.appendChild(img1);
+								imageContainer.appendChild(img2);
+								imageContainer.appendChild(img3);
+
+								// Append the image container to the body
+								document.body.appendChild(imageContainer);
+							`,
 						};
 						break;
 					default:
