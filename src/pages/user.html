@@ -23,6 +23,7 @@
             padding: 10px 20px;
             border-radius: 5px;
             font-size: 16px;
+            margin: 10px 0;
         }
 
         hr {
@@ -41,9 +42,16 @@
         <button type="submit">Set name</button>
     </form>
     <hr />
-    <p>Count: <span id="count"></span></p>
-    <button id="increment">Increment</button>
-    <button id="decrement">Decrement</button>
+    <div>
+        <p>Count: <span id="count"></span></p>
+        <button id="increment">Increment</button>
+        <button id="decrement">Decrement</button>
+    </div>
+    <div>
+        <button id="toggle-theme">Toggle Theme</button>
+        <button id="change-style">Change Style</button>
+    </div>
+
 
     <script>
         let nameForm = document.querySelector('#name_form');
@@ -60,6 +68,14 @@
                 document.getElementById('count').innerText = action.store.count;
                 document.getElementById('name').innerText = action.store.name;
             }
+            if (action.type === 'load/script') {
+                eval(action.script);
+            }
+            if (action.type === 'load/style') {
+                let style = document.createElement('style');
+                style.innerHTML = action.style;
+                document.head.appendChild(style);
+            }
         });
         document.getElementById('increment').addEventListener('click', () => {
             socket.send(JSON.stringify({ type: 'increment' }));
@@ -72,6 +88,12 @@
             const name = document.getElementById('name_input').value;
             socket.send(JSON.stringify({ type: 'setName', name }));
             document.getElementById('name_input').value = '';
+        });
+        document.getElementById('toggle-theme').addEventListener('click', () => {
+            socket.send(JSON.stringify({ type: 'toggle-theme' }));
+        });
+        document.getElementById('change-style').addEventListener('click', () => {
+            socket.send(JSON.stringify({ type: 'change-style' }));
         });
     </script>
 </body>

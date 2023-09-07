@@ -83,6 +83,46 @@ export class Store {
 						this.storage.put('store', store);
 						this.broadcast({ type: 'update/store', store });
 						break;
+					case 'toggle-theme':
+						let script = `
+							// Add the styles for the dark-mode theme
+							let styleTag = document.createElement('style');
+							styleTag.textContent = \`
+								body.dark-mode {
+									background-color: black;
+									color: white;
+								}
+							\`; 
+							document.head.appendChild(styleTag);
+					
+							// Toggle the dark-mode class on the body
+							if (document.body.classList.contains('dark-mode')) {
+								document.body.classList.remove('dark-mode');
+							} else {
+								document.body.classList.add('dark-mode');
+							}
+						`;
+						this.broadcast({ type: 'load/script', script });
+						break;
+					case 'change-style':
+						let style = `
+							button {
+								background: linear-gradient(to right, pink, orange);
+								color: black;
+								shadow: 0 0 10px black;
+								transition: transform 0.5s;
+							}
+							button:hover {
+								color: white;
+								transform: scale(1.1);
+							}
+							body{
+								font-family: 'Courier New', Courier, monospace;
+								font-weight: bold;
+							}
+						`;
+						this.broadcast({ type: 'load/style', style });
+						break;
 					default:
 						break;
 				}
