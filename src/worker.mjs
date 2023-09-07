@@ -47,7 +47,7 @@ export class Store {
 				return new Response('expected websocket', { status: 400 });
 			}
 			let pair = new WebSocketPair();
-
+			
 			pair[1].accept();
 
 			// Add the new socket to our list of sessions.
@@ -57,75 +57,80 @@ export class Store {
 			pair[1].send(JSON.stringify({ type: 'update/store', store }));
 
 			pair[1].addEventListener('message', (event) => {
-				let data = JSON.parse(event.data);
-				switch (data.type) {
+				let action = JSON.parse(event.data);
+				let data = {};
+				switch (action.type) {
 					case 'setName':
 						store = {
 							...store,
-							name: data.name,
+							name: action.name,
+						};
+						data = {
+							type: 'update/store',
+							store,
 						};
 						this.storage.put('store', store);
-						this.broadcast({ type: 'update/store', store });
 						break;
 					case 'increment':
 						store = {
 							...store,
 							count: store.count + 1,
 						};
+						data = {
+							type: 'update/store',
+							store,
+						};
 						this.storage.put('store', store);
-						this.broadcast({ type: 'update/store', store });
 						break;
 					case 'decrement':
 						store = {
 							...store,
 							count: store.count - 1,
 						};
+						data = {
+							type: 'update/store',
+							store,
+						};
 						this.storage.put('store', store);
-						this.broadcast({ type: 'update/store', store });
 						break;
 					case 'toggle-theme':
-						let script = `
-							// Add the styles for the dark-mode theme
-							let styleTag = document.createElement('style');
-							styleTag.textContent = \`
-								body.dark-mode {
-									background-color: black;
-									color: white;
+						data = {
+							type: 'load/script',
+							script: `
+								let body = document.querySelector('body');
+								if (body.classList.contains('dark')) {
+									body.classList.remove('dark');
+								} else {
+									body.classList.add('dark');
 								}
-							\`; 
-							document.head.appendChild(styleTag);
-					
-							// Toggle the dark-mode class on the body
-							if (document.body.classList.contains('dark-mode')) {
-								document.body.classList.remove('dark-mode');
-							} else {
-								document.body.classList.add('dark-mode');
-							}
-						`;
-						this.broadcast({ type: 'load/script', script });
+							`
+						};
 						break;
 					case 'change-style':
-						let style = `
-							button {
-								background: linear-gradient(to right, pink, orange);
-								color: black;
-								shadow: 0 0 10px black;
-								transition: transform 0.5s;
-							}
-							button:hover {
-								color: white;
-								transform: scale(1.05);
-							}
-							body{
-								font-family: 'Courier New', Courier, monospace;
-								font-weight: bold;
-							}
-						`;
-						this.broadcast({ type: 'load/style', style });
+						data = {
+							type: 'load/style',
+							style:`
+								button {
+									background: linear-gradient(to right, pink, orange);
+									color: black;
+									shadow: 0 0 10px black;
+									transition: transform 0.5s;
+								}
+								button:hover {
+									color: white;
+									transform: scale(1.05);
+								}
+								body{
+									font-family: 'Courier New', Courier, monospace;
+									font-weight: bold;
+								}
+							`
+						};
 						break;
 					default:
 						break;
 				}
+				this.broadcast(data);
 			});
 
 			return new Response(null, { status: 101, webSocket: pair[0] });
