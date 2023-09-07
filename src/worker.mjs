@@ -33,14 +33,19 @@ export class Store {
 		});
 	}
 
-	async fetch(request) {
-		let url = new URL(request.url);
+	async getStore() {
 		let store = (await this.storage.get('store')) || { count: 0 };
 		store = {
 			...store,
 			name: store.name ? store.name : 'Not set',
 			count: store.count ? store.count : 0,
 		};
+		return store;
+	}
+
+	async fetch(request) {
+		let url = new URL(request.url);
+		let store = await this.getStore();
 		const path = url.pathname.slice(1).split('/');
 		if (path[0] && path[1] === 'websocket') {
 			if (request.headers.get('Upgrade') != 'websocket') {
@@ -58,7 +63,7 @@ export class Store {
 
 			pair[1].addEventListener('message', (event) => {
 				let action = JSON.parse(event.data);
-				let data = {};
+				let data = { type: 'update/store', store };
 				switch (action.type) {
 					case 'setName':
 						store = {
