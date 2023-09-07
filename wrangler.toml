@@ -1,5 +1,5 @@
 name = "demo-durable-objects-worker"
-main = "src/worker.ts"
+main = "src/worker.mjs"
 compatibility_date = "2023-09-01"
 
 [durable_objects]
