@@ -29,12 +29,23 @@
         hr {
             margin: 20px 0;
         }
+
+        a {
+
+            display: inline-block;
+            background: #eee;
+            border: 1px solid #ccc;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            text-decoration: none;
+        }
     </style>
 
 </head>
 
 <body>
-    <a href="/">Back</a>
+    <a href="/">Go Back</a>
     <h1>Counter</h1>
     <p>Name: <span id="name"></span></p>
     <form id="name_form">
@@ -47,6 +58,7 @@
         <button id="increment">Increment</button>
         <button id="decrement">Decrement</button>
     </div>
+    <hr />
     <div>
         <button id="toggle-theme">Toggle Theme</button>
         <button id="change-style">Change Style</button>
